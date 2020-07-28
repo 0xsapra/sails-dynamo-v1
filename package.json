@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/amitphulera/sails-dynamodb-v1.git"
+    "url": "git@github.com:Anonyme1396/sails-dynamo-v1.git"
   },
   "keywords": [
     "dynamodb",
