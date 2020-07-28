@@ -20,7 +20,8 @@ const DYNAMO_TYPES = {
 const OPERATOR_MAP = {
   '=': 'EQ',
   '!=': 'NE',
-  in: 'IN',
+  // in: 'IN',
+  in: 'BETWEEN',
   '<=': 'LE',
   '<': 'LT',
   '>=': 'GE',
