@@ -29,7 +29,8 @@ const OPERATOR_MAP = {
   between: 'BETWEEN',
   contains: 'CONTAINS',
   nin: 'NOT_CONTAINS',
-  startsWith: 'BEGINS_WITH'
+  startsWith: 'BEGINS_WITH',
+  like: 'BEGINS_WITH'
 };
 //special case for not null and null
 
@@ -118,14 +119,14 @@ module.exports = {
     const AttributeDefinitions = attributes
       .map(createDynamoDefinitions)
       .filter(Boolean);
-    if (lSRangeKeys.length >= 1 ) {
+    if (lSRangeKeys.length >= 1) {
       // Due to the format in which we are specifying global secondary index, we have to check afterwards if the range
       // key provided in index definition is already in AttributeDefinition array, if not add it to the array.
       attributes.map(attr => {
-        if (lSRangeKeys.indexOf(attr.columnName) !== -1 && 
-        !AttributeDefinitions.find(({AttributeName}) => 
-        AttributeName === attr.columnName
-        )) {
+        if (lSRangeKeys.indexOf(attr.columnName) !== -1 &&
+          !AttributeDefinitions.find(({ AttributeName }) =>
+            AttributeName === attr.columnName
+          )) {
           let { type, columnName } = attr;
           AttributeDefinitions.push({
             AttributeName: columnName,
@@ -287,7 +288,7 @@ module.exports = {
    * @description for a given array of dynamo records returns a
    * array of batched records where each batch has 15 records.
    */
-  createBatch: function(Items) {
+  createBatch: function (Items) {
     const batchedItems = [];
     let batchArr = [];
     for (let i = 1; i <= Items.length; i++) {
@@ -332,7 +333,7 @@ module.exports = {
    * @description Figures out type of query to perform with given qeury object
    * and shcema information
    */
-  getIndexes: function(schema, query) {
+  getIndexes: function (schema, query) {
     let queryNature = {};
     let { indexInfo, filterKeys } = this.extractIndexFields(query, schema);
 
@@ -380,7 +381,7 @@ module.exports = {
    * to set as attribute names if present in query else are set
    * as false.
    */
-  extractIndexFields: function(query, schema) {
+  extractIndexFields: function (query, schema) {
     let indexInfo = {
       hash: false,
       range: false,
@@ -438,7 +439,7 @@ module.exports = {
    * @param {Object|String} attr
    * @description Converts a attribute of sails query to it's respective dynamoDB query Attribute
    */
-  dynamoAttribute: function(attr) {
+  dynamoAttribute: function (attr) {
     let ComparisonOperator = 'EQ';
     let value = attr;
     if (typeof attr === 'object' && attr !== null) {
@@ -450,6 +451,15 @@ module.exports = {
       }
       ComparisonOperator = OPERATOR_MAP[operator];
     }
+    if (ComparisonOperator === 'BEGINS_WITH' && Array.isArray(value) === false) {
+      // dynamo only supports begins_with, and waterline only supports startsWith.
+      // waterline converts startsWith query with 'like a%' like query.
+      // adding 'like' in OPERATOR_MAP and removing the % from query will get the work done
+      if (value.slice(-1) === '%') {
+        value = value.slice(0, -1);
+      }
+
+    }
     const AttributeValueList = Array.isArray(value) ? value : [value];
     return { AttributeValueList, ComparisonOperator };
   },
@@ -460,7 +470,7 @@ module.exports = {
    * @description Used for normalizing each entry queried from dynamoDB as in cases of sets the application expects
    * array, So this function translates DynamoSets to js arrays.
    */
-  normalizeData: function(entry, schema) {
+  normalizeData: function (entry, schema) {
     Object.keys(entry).forEach(attr => {
       if (schema[attr].type === 'SS' || schema[attr].type === 'NS') {
         entry[attr] = entry[attr].values;
