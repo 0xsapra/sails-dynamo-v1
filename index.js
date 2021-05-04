@@ -409,7 +409,14 @@ module.exports = {
         err: `No table registered in models with ${TableName}`
       });
     }
+    const POSSIBLE_RANGE_KEY = ['RANGE', 'GlobalSecondary'];
+    let hasSortKey = Object.values(schema).find(
+      (schema) => POSSIBLE_RANGE_KEY.indexOf(schema.KeyType) !== -1
+    );
     let { and } = query.criteria.where;
+    if (and === undefined && hasSortKey === undefined) {
+      and = [query.criteria.where];
+    }
     let Key = and.reduce((prev, curr) => ({ ...prev, ...curr }), {});
     const queryObj = {
       TableName,
